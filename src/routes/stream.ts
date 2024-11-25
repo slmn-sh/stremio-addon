@@ -42,7 +42,7 @@ streamRoute.get(
       streams: list.map((l) => ({
         infoHash: l.infoHash!,
         name: l.quality + (l.isHDR ? " HDR" : ""),
-        description: `${l.provider}${l.seeders ? `\nSeeders: ${l.seeders}` : ""}\n${xbytes(l.size ?? 0)}`,
+        description: `${l.provider}${l.seeders ? `\r\n🌱: ${l.seeders}` : ""}\r\n${xbytes(l.size ?? 0)}`,
         behaviorHints: {
           filename: l.name,
           videoSize: l.size,
@@ -92,13 +92,13 @@ streamRoute.get(
       }),
     ]);
 
-    const list = _1337x.concat(piratesBay).concat(yts);
+    const list = _1337x.concat(piratesBay).concat(yts).filter(tor => tor.seeders !== 0);
 
     return c.json({
       streams: list.map((l) => ({
         infoHash: l.infoHash!,
         name: l.quality + (l.isHDR ? " HDR" : ""),
-        description: `${l.provider}${l.seeders ? `\nSeeders: ${l.seeders}` : ""}\n${xbytes(l.size ?? 0)}`,
+        description: `${l.provider}${l.seeders ? `\r\n🌱: ${l.seeders}` : ""}\r\n${xbytes(l.size ?? 0)}`,
         behaviorHints: {
           filename: l.name,
           videoSize: l.size,

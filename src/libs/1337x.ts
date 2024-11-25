@@ -23,10 +23,8 @@ export default async function get1337x(args: Args) {
 
   const url = `https://1337x.to/sort-category-search/${query}/${args.type === "movie" ? "Movies" : "TV"}/seeders/desc/1/`;
 
-  console.log({ url })
   const response = await fetch(url);
   const $ = cheerio.load(await response.text());
-  console.log($.html())
   const { torrents } = $.extract({
     torrents: [
       {
@@ -79,7 +77,7 @@ export default async function get1337x(args: Args) {
     .filter(
       (tor) => tor.quality && args.quality.includes(tor.quality as Quality),
     )
-    .sort((a, b) => (a.seeders! < b.seeders! ? 1 : -1))
+    .sort((a, b) => (a.seeders! < b.seeders! ? 1 : -1));
 
   const hashMap = Object.fromEntries(
     await Promise.all(processed.map((tor) => extractHash(tor.url!))),

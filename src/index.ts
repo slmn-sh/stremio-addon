@@ -18,12 +18,12 @@ export const manifest = {
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
 app.use(contextStorage());
-// app.use(
-//   cache({
-//     cacheName: "stremio-cache",
-//     cacheControl: "max-age=36000"
-//   }),
-// );
+app.use(
+  cache({
+    cacheName: "stremio-cache",
+    cacheControl: "max-age=36000"
+  }),
+);
 app.use(
   cors({
     origin: "*",
