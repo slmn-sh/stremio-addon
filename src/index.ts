@@ -3,6 +3,7 @@ import streamRoute from "./routes/stream";
 import { cors } from "hono/cors";
 import { contextStorage } from "hono/context-storage";
 import { cache } from "hono/cache";
+import { timing } from "hono/timing";
 
 export const manifest = {
   version: "0.0.1",
@@ -24,6 +25,7 @@ app.use(
     cacheControl: "max-age=36000"
   }),
 );
+app.use(timing());
 app.use(
   cors({
     origin: "*",

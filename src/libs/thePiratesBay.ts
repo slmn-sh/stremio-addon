@@ -1,6 +1,8 @@
 import type { Quality } from "../types/stream";
 import type { Args } from "../types/libs";
 import { formatSeasonEpisode, hdrRegex, qualityRegex } from "../utils/string";
+import { getContext } from "hono/context-storage";
+import { endTime, startTime } from "hono/timing";
 
 type Response = {
   id: string;
@@ -18,6 +20,7 @@ type Response = {
 };
 
 export default async function getPirateBay(args: Args) {
+  startTime(getContext(), "PirateBay", "Torrents from The Pirate Bay");
   let url = "https://apibay.org/q.php";
   let q = `${args.title}+`;
 
@@ -44,11 +47,11 @@ export default async function getPirateBay(args: Args) {
   });
   const torrents = await response.json<Response[]>();
 
-  return torrents
+  const results = torrents
     .map((torrent) => ({
       name: torrent.name,
       isHDR: hdrRegex.test(torrent.name),
-      quality: torrent.name.match(qualityRegex)?.[0],
+      quality: String(torrent.name.match(qualityRegex)?.[0]),
       seeders: Number(torrent.seeders),
       leechers: Number(torrent.leechers),
       size: Number(torrent.size),
@@ -58,6 +61,8 @@ export default async function getPirateBay(args: Args) {
     }))
     .filter(
       (tor) => tor.quality && args.quality.includes(tor.quality as Quality),
-    )
-    .sort((a, b) => (a.seeders! < b.seeders! ? 1 : -1));
+    );
+
+  endTime(getContext(), "PirateBay");
+  return results;
 }

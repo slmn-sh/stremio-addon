@@ -1,68 +1,70 @@
 import xbytes from "xbytes";
 import * as cheerio from "cheerio";
-import { getInfoHash } from "../utils/torrent";
 import type { Args } from "../types/libs";
 import type { Quality } from "../types/stream";
-
-type Response = {
-  message: string;
-  status: "ok";
-  data: {
-    img: string;
-    title: string;
-    url: string;
-    year: string;
-  }[];
-};
+import { getContext } from "hono/context-storage";
+import { endTime, startTime } from "hono/timing";
+import { hdrRegex, qualityRegex } from "../utils/string";
 
 export default async function getYts(args: Args) {
   if (args.type === "tvSeries") {
     return [];
   }
-  let url = "https://yts.mx/ajax/search?";
-  const params = {
-    query: args.title,
-  };
-  url += new URLSearchParams(params).toString();
-  const response = await fetch(url);
-  const data = await response.json<Response>();
-  const movie = data.data.find(
-    (d) => d.title === args.title && Number(d.year) === args.year,
-  );
-  if (!movie) {
-    return [];
-  }
-  const movieResponse = await fetch(movie.url);
-  const $ = cheerio.load(await movieResponse.text());
+  startTime(getContext(), "YTS", "Torrents from The YTS");
+  const movieUrl = `https://yts.mx/rss/${args.title}/all/all/0/en`;
+  const movieResponse = await fetch(movieUrl);
+  let text = await movieResponse.text();
+  text = text.replaceAll(/<(.*)><!\[CDATA\[(.*)\]\]><\/\1>/g, "<$1>$2</$1>");
+  const $ = cheerio.load(text, { xml: true });
   const { torrents } = $.extract({
     torrents: [
       {
-        selector: ".modal-content .modal-torrent",
+        selector: "item",
         value: {
-          quality: ".modal-quality span",
-          size: {
-            selector: "p.quality-size:nth-of-type(3)",
+          title: "title",
+          quality: {
+            selector: "title",
             value: (el) => {
-              return xbytes.parseSize($(el).text().replace(" ", ""));
+              return $(el).text().match(qualityRegex)?.[0];
+            },
+          },
+          size: {
+            selector: "description",
+            value: (el) => {
+              let size = $(el)
+                .text()
+                .replace(/.*Size: (.*)Runtime.*/, "$1")
+                .replace(" ", "");
+              return xbytes.parseSize(size);
             },
           },
           infoHash: {
-            selector: ".magnet-download",
-            value: (el) => getInfoHash(el.attribs.href),
+            selector: "enclosure",
+            value: (el) => el.attribs.url.split("/").at(-1),
           },
         },
       },
     ],
   });
-  return torrents
-    .filter((torrent) => args.quality.includes(torrent.quality as Quality))
+  const results = torrents
+    .filter(
+      (torrent) =>
+        new RegExp(args.title).test(torrent.title!) &&
+        args.quality.includes(torrent.quality as Quality),
+    )
     .map((torrent) => ({
       ...torrent,
-      name: $("#movie-info h1").text()!,
-      isHDR: false,
-      seeders: 0,
+      name: torrent.title!,
+      isHDR: hdrRegex.test(torrent.title!),
+      seeders: 10,
       leechers: 0,
+      title: torrent.title!,
+      quality: torrent.quality!,
+      size: Number(torrent.size),
+      infoHash: torrent.infoHash!,
       provider: "YTS",
       uploader: "yts",
     }));
+  endTime(getContext(), "YTS");
+  return results;
 }

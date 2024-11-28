@@ -14,3 +14,15 @@ export type Args = {
       episode: string;
     }
 );
+
+export type Torrent = {
+  name: string;
+  isHDR: boolean;
+  seeders: number;
+  leechers: number;
+  provider: string;
+  uploader: string;
+  quality: string;
+  size: number;
+  infoHash: string;
+};

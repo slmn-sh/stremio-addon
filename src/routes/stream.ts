@@ -5,6 +5,8 @@ import getPirateBay from "../libs/thePiratesBay";
 import getYts from "../libs/yts";
 import type { StreamObject } from "../types/stream";
 import xbytes from "xbytes";
+import { filterTorrents, sortTorrents } from "../utils/torrent";
+import getEZTV from "../libs/eztv";
 
 const streamRoute = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -37,7 +39,10 @@ streamRoute.get(
         type: "movie",
       }),
     ]);
-    const list = _1337x.concat(piratesBay).concat(yts);
+
+    const list = filterTorrents(
+      _1337x.concat(piratesBay).concat(yts).sort(sortTorrents),
+    );
     return c.json({
       streams: list.map((l) => ({
         infoHash: l.infoHash!,
@@ -65,7 +70,7 @@ streamRoute.get(
     }
     episode = episode.replace(".json", "");
 
-    const [_1337x, piratesBay, yts] = await Promise.all([
+    const [_1337x, piratesBay, eztv] = await Promise.all([
       get1337x({
         title: data.title.primary_title,
         year: data.title.start_year,
@@ -82,7 +87,7 @@ streamRoute.get(
         season,
         episode,
       }),
-      getYts({
+      getEZTV({
         title: data.title.primary_title,
         year: data.title.start_year,
         quality: ["2160p", "1080p"],
@@ -92,7 +97,9 @@ streamRoute.get(
       }),
     ]);
 
-    const list = _1337x.concat(piratesBay).concat(yts).filter(tor => tor.seeders !== 0);
+    const list = filterTorrents(
+      _1337x.concat(piratesBay).concat(eztv).sort(sortTorrents),
+    );
 
     return c.json({
       streams: list.map((l) => ({

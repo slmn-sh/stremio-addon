@@ -1,20 +1,21 @@
 import * as cheerio from "cheerio";
 import xbytes from "xbytes";
-import { getInfoHash } from "../utils/torrent";
 import { formatSeasonEpisode, hdrRegex, qualityRegex } from "../utils/string";
 import type { Quality } from "../types/stream";
 import type { Args } from "../types/libs";
+import { endTime, startTime } from "hono/timing";
+import { getContext } from "hono/context-storage";
 
 async function extractHash(url: string) {
   const response = await fetch(url);
   const $ = cheerio.load(await response.text());
-  const magnet = getInfoHash($("#openPopup").attr("href"));
-  return [url, magnet ?? ""];
+  const magnet = $(".infohash-box span").text();
+  return [url, magnet];
 }
 
 export default async function get1337x(args: Args) {
+  startTime(getContext(), "1337x", "Torrents from 1337x");
   let query: string;
-
   if (args.type === "movie") {
     query = `${args.title} ${args.year}`;
   } else {
@@ -73,22 +74,25 @@ export default async function get1337x(args: Args) {
     ],
   });
 
-  const processed = torrents
-    .filter(
-      (tor) => tor.quality && args.quality.includes(tor.quality as Quality),
-    )
-    .sort((a, b) => (a.seeders! < b.seeders! ? 1 : -1));
-
+  const processed = torrents.filter(
+    (tor) => tor.quality && args.quality.includes(tor.quality as Quality),
+  );
   const hashMap = Object.fromEntries(
     await Promise.all(processed.map((tor) => extractHash(tor.url!))),
   );
-
   const final = processed.map(({ url, ...tor }) => ({
     ...tor,
     name: tor.name!,
+    isHDR: Boolean(tor.isHDR),
+    seeders: Number(tor.seeders),
+    leechers: Number(tor.leechers),
+    quality: String(tor.quality),
+    uploader: String(tor.uploader),
+    size: Number(tor.size),
     provider: "1337x",
-    infoHash: hashMap[url ?? ""],
+    infoHash: hashMap[url ?? ""] as string,
   }));
 
+  endTime(getContext(), "1337x");
   return final;
 }
