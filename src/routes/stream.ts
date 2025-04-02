@@ -20,12 +20,13 @@ streamRoute.get(
       return c.json(errors as any);
     }
     const [_1337x, piratesBay, yts] = await Promise.all([
-      get1337x({
-        title: data.title.primary_title,
-        year: data.title.start_year,
-        quality: ["2160p", "1080p"],
-        type: "movie",
-      }),
+      // get1337x({
+      //   title: data.title.primary_title,
+      //   year: data.title.start_year,
+      //   quality: ["2160p", "1080p"],
+      //   type: "movie",
+      // }),
+      Promise.resolve([] as any[]),
       getPirateBay({
         title: data.title.primary_title,
         year: data.title.start_year,
@@ -71,14 +72,15 @@ streamRoute.get(
     episode = episode.replace(".json", "");
 
     const [_1337x, piratesBay, eztv] = await Promise.all([
-      get1337x({
-        title: data.title.primary_title,
-        year: data.title.start_year,
-        quality: ["2160p", "1080p"],
-        type: "tvSeries",
-        season,
-        episode,
-      }),
+      // get1337x({
+      //   title: data.title.primary_title,
+      //   year: data.title.start_year,
+      //   quality: ["2160p", "1080p"],
+      //   type: "tvSeries",
+      //   season,
+      //   episode,
+      // }),
+      Promise.resolve([] as any[]),
       getPirateBay({
         title: data.title.primary_title,
         year: data.title.start_year,
